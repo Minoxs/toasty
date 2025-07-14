@@ -6,8 +6,10 @@ package toasty
 
 #include "header/notification.h"
 #cgo nocallback CreateTrayIcon
-#cgo nocallback SendTransientNotification
 #cgo nocallback DeleteTrayIcon
+#cgo nocallback SetTip
+#cgo nocallback SendNotification
+#cgo nocallback SendTransientNotification
 */
 import "C"
 import (
@@ -21,16 +23,33 @@ func free(str *C.char) {
 }
 
 type TrayIcon struct {
-	id uint
+	handle *C.tray_icon
 }
 
-func CreateTrayIcon(tip string) TrayIcon {
+func CreateTrayIcon() TrayIcon {
+	return TrayIcon{C.CreateTrayIcon()}
+}
+
+func (t *TrayIcon) Delete() {
+	C.DeleteTrayIcon(t.handle)
+}
+
+func (t *TrayIcon) SetTip(tip string) {
 	var cTip = C.CString(tip)
 	defer free(cTip)
 
-	return TrayIcon{
-		id: uint(C.CreateTrayIcon(cTip)),
-	}
+	C.SetTip(t.handle, cTip)
+}
+
+func (t *TrayIcon) SendNotification(title string, message string) {
+	var (
+		cTitle   = C.CString(title)
+		cMessage = C.CString(message)
+	)
+	defer free(cTitle)
+	defer free(cMessage)
+
+	C.SendNotification(t.handle, cTitle, cMessage)
 }
 
 // SendTransientNotification sends a notification to the notification area which disappears after the specified timeout.
@@ -44,10 +63,10 @@ func SendTransientNotification(title string, message string, timeout time.Durati
 	defer free(cTitle)
 	defer free(cMessage)
 
-	var id = C.SendTransientNotification(cTitle, cMessage)
+	var handle = C.SendTransientNotification(cTitle, cMessage)
 	cancel = sync.OnceFunc(
 		func() {
-			C.DeleteTrayIcon(id)
+			C.DeleteTrayIcon(handle)
 		},
 	)
 
