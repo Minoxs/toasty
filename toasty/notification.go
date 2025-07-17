@@ -32,6 +32,7 @@ func CreateTrayIcon() TrayIcon {
 
 func (t *TrayIcon) Delete() {
 	C.DeleteTrayIcon(t.handle)
+	t.handle = nil
 }
 
 func (t *TrayIcon) SetTip(tip string) {
