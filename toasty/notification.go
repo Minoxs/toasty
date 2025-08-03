@@ -22,19 +22,28 @@ func free(str *C.char) {
 	C.free(unsafe.Pointer(str))
 }
 
+// TrayIcon represents an instance of the tray icon.
+// Multiple tray icons can be created and handled in the same process.
 type TrayIcon struct {
 	handle *C.tray_icon
 }
 
-func CreateTrayIcon() TrayIcon {
-	return TrayIcon{C.CreateTrayIcon()}
+// CreateTrayIcon creates an instance of TrayIcon.
+// This method will call CGO to interact with Win32.
+// An anonymous window will be created to ensure the tray icon works correctly.
+// Call TrayIcon.Delete to free unmanaged resources and remove the tray icon.
+func CreateTrayIcon() *TrayIcon {
+	return &TrayIcon{C.CreateTrayIcon()}
 }
 
+// Delete removes the tray icon and clears unmanaged resources.
+// Ensure this method is called after when the tray icon goes out of scope.
 func (t *TrayIcon) Delete() {
 	C.DeleteTrayIcon(t.handle)
 	t.handle = nil
 }
 
+// SetTip changes tht text that shows up when mousing over the tray icon
 func (t *TrayIcon) SetTip(tip string) {
 	var cTip = C.CString(tip)
 	defer free(cTip)
@@ -42,6 +51,8 @@ func (t *TrayIcon) SetTip(tip string) {
 	C.SetTip(t.handle, cTip)
 }
 
+// SendNotification will send a notification to the tray icon that will persist on mouse-over.
+// TODO: Support callback on notification click
 func (t *TrayIcon) SendNotification(title string, message string) {
 	var (
 		cTitle   = C.CString(title)
